@@ -3,6 +3,7 @@ import shutil
 from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from typing import List
 from dotenv import load_dotenv
 from rag_pipeline import (
     build_vectorstore,
@@ -25,7 +26,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Cache the chain after first load
 _chain = None
 
 def get_chain():
@@ -41,7 +41,7 @@ class QueryRequest(BaseModel):
 
 class QueryResponse(BaseModel):
     answer: str
-    sources: list[str]
+    sources: List[str]
     chunks_used: int
 
 
@@ -62,7 +62,6 @@ def health():
 
 @app.post("/upload")
 async def upload_pdf(file: UploadFile = File(...)):
-    """Upload a PDF and index it into ChromaDB."""
     if not file.filename.endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Only PDF files are supported.")
 
@@ -72,17 +71,15 @@ async def upload_pdf(file: UploadFile = File(...)):
 
     try:
         build_vectorstore(upload_path)
-        # Reset chain so it reloads with new data
         global _chain
         _chain = None
-        return {"message": f"✅ '{file.filename}' indexed successfully. You can now ask questions."}
+        return {"message": f"'{file.filename}' indexed successfully. You can now ask questions."}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Indexing failed: {str(e)}")
 
 
-@app.post("/ask", response_model=QueryResponse)
+@app.post("/ask")
 def ask(req: QueryRequest):
-    """Ask a question over the indexed documents."""
     if not req.question.strip():
         raise HTTPException(status_code=400, detail="Question cannot be empty.")
 
@@ -101,10 +98,10 @@ def ask(req: QueryRequest):
             for doc in result["source_documents"]
         ]))
 
-        return QueryResponse(
-            answer=result["result"],
-            sources=sources,
-            chunks_used=len(result["source_documents"])
-        )
+        return {
+            "answer": result["result"],
+            "sources": sources,
+            "chunks_used": len(result["source_documents"])
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
