@@ -2,7 +2,7 @@
 
 > Ask questions over any PDF using **Retrieval-Augmented Generation** — built with LangChain, ChromaDB, and Claude AI.
 
-**Live Demo:** `https://your-frontend.vercel.app` &nbsp;|&nbsp; **API Docs:** `https://your-backend.onrender.com/docs`
+**Live Demo:** `https://your-frontend.vercel.app` &nbsp;|&nbsp; **API Docs:** `[https://your-backend.onrender.com/docs](https://documind-rag-gaaq.onrender.com)`
 
 ---
 
