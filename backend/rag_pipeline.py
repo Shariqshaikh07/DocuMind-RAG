@@ -1,14 +1,14 @@
 import os
 from langchain_community.document_loaders import PyPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_voyageai import VoyageAIEmbeddings
 from langchain_community.vectorstores import Chroma
 from langchain_anthropic import ChatAnthropic
 from langchain.chains import RetrievalQA
 from langchain.prompts import PromptTemplate
 
 CHROMA_PATH = "./chroma_db"
-EMBED_MODEL = "all-MiniLM-L6-v2"
+EMBED_MODEL = "voyage-3-lite"
 
 RAG_PROMPT = PromptTemplate(
     input_variables=["context", "question"],
@@ -26,21 +26,22 @@ Answer:"""
 
 
 def get_embeddings():
-    return HuggingFaceEmbeddings(model_name=EMBED_MODEL)
+    return VoyageAIEmbeddings(
+        model=EMBED_MODEL,
+        voyage_api_key=os.getenv("VOYAGE_API_KEY")
+    )
 
 
 def build_vectorstore(pdf_path: str) -> Chroma:
     """Ingest a PDF and store embeddings in ChromaDB."""
     loader = PyPDFLoader(pdf_path)
     docs = loader.load()
-
     splitter = RecursiveCharacterTextSplitter(
         chunk_size=500,
         chunk_overlap=50,
         separators=["\n\n", "\n", ".", " "]
     )
     chunks = splitter.split_documents(docs)
-
     embeddings = get_embeddings()
     vectorstore = Chroma.from_documents(
         chunks,
